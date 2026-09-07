@@ -12,6 +12,14 @@ type Config struct {
 	Windowed  bool
 }
 
+func DefaultConfig() Config {
+	return Config{
+		StartPart: demo.PartAlkutekstitI,
+		Loop:      false,
+		Windowed:  true,
+	}
+}
+
 const parameterList = "Parameter List:\n\n" +
 	"2: Logo\n" +
 	"3: Vuori Scrolli\n" +
@@ -24,11 +32,7 @@ const parameterList = "Parameter List:\n\n" +
 	"F: Fullscreen Mode\n"
 
 func ParseArgs(args []string) (Config, error) {
-	cfg := Config{
-		StartPart: demo.PartAlkutekstitI,
-		Loop:      false,
-		Windowed:  true,
-	}
+	cfg := DefaultConfig()
 
 	if len(args) == 0 {
 		return cfg, nil

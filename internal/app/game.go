@@ -1,22 +1,30 @@
 package app
 
 import (
+	"go-secondreality/internal/constants"
+	"go-secondreality/internal/demo"
 	"go-secondreality/internal/driver"
 	"go-secondreality/internal/graphics"
-	"go-secondreality/internal/constants"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Game struct {
-	renderer *graphics.Renderer
+	renderer  *graphics.Renderer
+	demoCfg   demo.Config
+	demoReady bool
 }
 
-func NewGame(renderer *graphics.Renderer) *Game {
-	return &Game{renderer: renderer}
+func newGame(renderer *graphics.Renderer, demoCfg demo.Config) *Game {
+	return &Game{renderer: renderer, demoCfg: demoCfg}
 }
 
 func (g *Game) Update() error {
+	if !g.demoReady {
+		g.demoReady = true
+		go demo.Run(g.demoCfg)
+	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) || ebiten.IsWindowBeingClosed() {
 		driver.RequestQuit()
 		return ebiten.Termination

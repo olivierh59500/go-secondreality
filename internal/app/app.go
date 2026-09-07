@@ -8,10 +8,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func Run(cfg Config) error {
+// NewGame creates the shared game implementation used by desktop and mobile.
+// Android-dependent services such as audio are deliberately started from the
+// first Update rather than while the native library is loading.
+func NewGame(cfg Config) *Game {
 	renderer := graphics.NewRenderer()
 	driver.SetRenderer(renderer)
+	demoCfg := demo.Config{StartPart: cfg.StartPart, Loop: cfg.Loop}
+	return newGame(renderer, demoCfg)
+}
 
+func Run(cfg Config) error {
 	ebiten.SetWindowSize(960, 600)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowTitle("Second Reality")
@@ -20,9 +27,5 @@ func Run(cfg Config) error {
 		ebiten.SetFullscreen(true)
 	}
 
-	game := NewGame(renderer)
-	demoCfg := demo.Config{StartPart: cfg.StartPart, Loop: cfg.Loop}
-	go demo.Run(demoCfg)
-
-	return ebiten.RunGame(game)
+	return ebiten.RunGame(NewGame(cfg))
 }
