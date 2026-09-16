@@ -68,13 +68,14 @@ func runAlku() {
 
 func alkuEnsureData() error {
 	alkuDataOnce.Do(func() {
+		data := srdata.AlkuData()
 		var err error
-		alkuHzpic, err = alkuExtractArray(srdata.AlkuData, "hzpic")
+		alkuHzpic, err = alkuExtractArray(data, "hzpic")
 		if err != nil {
 			alkuDataErr = err
 			return
 		}
-		alkuFontData, err = alkuExtractArray(srdata.AlkuData, "alkuFont")
+		alkuFontData, err = alkuExtractArray(data, "alkuFont")
 		if err != nil {
 			alkuDataErr = err
 			return
@@ -250,7 +251,6 @@ func (s *alkuState) run() {
 		} else if f > 50 && common.CopDoFade == 0 {
 			common.CopPal = s.palette[:]
 			common.DoPal = 1
-			f++
 			s.clearTbuf()
 
 			switch s.tptr {

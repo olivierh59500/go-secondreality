@@ -22,7 +22,7 @@ var (
 func endscrlEnsureData() error {
 	endscrlOnce.Do(func() {
 		var err error
-		endscrlFont, err = endscrlExtractArray(srdata.EndScrlData, "endscrl_font")
+		endscrlFont, err = endscrlExtractArray(srdata.EndScrlData(), "endscrl_font")
 		if err != nil {
 			endscrlErr = err
 			return

@@ -32,7 +32,6 @@ func runU2A() {
 		log.Printf("u2a: data too small (%d bytes)", len(u2aBg))
 		return
 	}
-
 	visuReset()
 
 	bg2 := make([]byte, constants.ScreenSize)
@@ -151,7 +150,8 @@ func runU2A() {
 
 	if !shim.IsDemoFirstPart() {
 		for !driver.WantsToQuit() {
-			if music.GetOrder() > 10 && music.GetRow() > 46 {
+			order, row := music.GetOrderRow()
+			if order > 10 && row > 46 {
 				break
 			}
 			driver.Vsync(false)
@@ -363,10 +363,9 @@ func runU2A() {
 
 	visuClearBG(bg2)
 }
-
 func u2aEnsureData() error {
 	u2aDataOnce.Do(func() {
-		u2aBg, u2aDataErr = u2aExtractArray(srdata.U2AData, "u2a_bg")
+		u2aBg, u2aDataErr = u2aExtractArray(srdata.U2AData(), "u2a_bg")
 	})
 	return u2aDataErr
 }

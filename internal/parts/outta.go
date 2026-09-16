@@ -40,7 +40,6 @@ func runOutta() {
 		log.Printf("outta: missing wfade")
 		return
 	}
-
 	pamPal := make([]byte, len(outtaBasePalette)+constants.PaletteByteCount*64)
 	copy(pamPal, outtaBasePalette)
 
@@ -168,18 +167,20 @@ func outtaAlign16(start, idx int) int {
 
 func outtaEnsureData() error {
 	outtaOnce.Do(func() {
+		source := srdata.OuttaSource()
+		data := srdata.OuttaData()
 		var err error
-		outtaBasePalette, err = outtaExtractArray(srdata.OuttaSrc, "basePalette")
+		outtaBasePalette, err = outtaExtractArray(source, "basePalette")
 		if err != nil {
 			outtaErr = err
 			return
 		}
-		outtaMemBlock, err = outtaExtractArray(srdata.OuttaData, "pam_memblock")
+		outtaMemBlock, err = outtaExtractArray(data, "pam_memblock")
 		if err != nil {
 			outtaErr = err
 			return
 		}
-		outtaWfade, err = outtaExtractArrayInts(srdata.OuttaData, "wfade")
+		outtaWfade, err = outtaExtractArrayInts(data, "wfade")
 		if err != nil {
 			outtaErr = err
 			return

@@ -30,8 +30,9 @@ var plzR0 = []int{0, 0, 500, 0, 0, 0, 256, 512}
 
 func plzEnsureData() error {
 	plzDataOnce.Do(func() {
+		data := srdata.PLZData()
 		var err error
-		ptauVals, err := plzExtractArrayExprs(srdata.PLZData, "ptau", nil)
+		ptauVals, err := plzExtractArrayExprs(data, "ptau", nil)
 		if err != nil {
 			plzDataErr = err
 			return
@@ -41,7 +42,7 @@ func plzEnsureData() error {
 			plzPTau[i] = byte(uint8(ptauVals[i]))
 		}
 
-		psiniVals, err := plzExtractArrayExprs(srdata.PLZData, "psini", nil)
+		psiniVals, err := plzExtractArrayExprs(data, "psini", nil)
 		if err != nil {
 			plzDataErr = err
 			return
@@ -51,35 +52,35 @@ func plzEnsureData() error {
 			plzPSini[i] = byte(uint8(psiniVals[i]))
 		}
 
-		lsini4Vals, err := plzExtractArrayExprs(srdata.PLZData, "lsini4", nil)
+		lsini4Vals, err := plzExtractArrayExprs(data, "lsini4", nil)
 		if err != nil {
 			plzDataErr = err
 			return
 		}
 		plzLsini4 = plzIntsToLEBytes(lsini4Vals, plzSinBufferSize)
 
-		lsini16Vals, err := plzExtractArrayExprs(srdata.PLZData, "lsini16", nil)
+		lsini16Vals, err := plzExtractArrayExprs(data, "lsini16", nil)
 		if err != nil {
 			plzDataErr = err
 			return
 		}
 		plzLsini16 = plzIntsToLEBytes(lsini16Vals, plzSinBufferSize)
 
-		sinitVals, err := plzExtractArrayExprs(srdata.PLZData, "_sinit", nil)
+		sinitVals, err := plzExtractArrayExprs(data, "_sinit", nil)
 		if err != nil {
 			plzDataErr = err
 			return
 		}
 		plzSinit = plzBytesToInt16s(plzIntsToBytes(sinitVals))
 
-		kosinitVals, err := plzExtractArrayExprs(srdata.PLZData, "_kosinit", nil)
+		kosinitVals, err := plzExtractArrayExprs(data, "_kosinit", nil)
 		if err != nil {
 			plzDataErr = err
 			return
 		}
 		plzKosinit = plzBytesToInt16s(plzIntsToBytes(kosinitVals))
 
-		initVals, err := plzExtractArrayExprs(srdata.PLZData, "inittable", nil)
+		initVals, err := plzExtractArrayExprs(data, "inittable", nil)
 		if err != nil {
 			plzDataErr = err
 			return
@@ -95,7 +96,7 @@ func plzEnsureData() error {
 			}
 		}
 
-		splineVals, err := plzExtractArrayExprs(srdata.PLZData, "splinecoef", nil)
+		splineVals, err := plzExtractArrayExprs(data, "splinecoef", nil)
 		if err != nil {
 			plzDataErr = err
 			return
@@ -105,7 +106,7 @@ func plzEnsureData() error {
 			plzSplineCoef[i] = int16(v)
 		}
 
-		buuVals, err := plzExtractBuu(srdata.PLZData)
+		buuVals, err := plzExtractBuu(data)
 		if err != nil {
 			plzDataErr = err
 			return

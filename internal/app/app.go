@@ -20,7 +20,7 @@ func NewGame(cfg Config) *Game {
 
 func Run(cfg Config) error {
 	ebiten.SetWindowSize(960, 600)
-	ebiten.SetWindowResizable(true)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Second Reality")
 	ebiten.SetTPS(70)
 	if !cfg.Windowed {

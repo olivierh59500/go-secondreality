@@ -9,6 +9,7 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 
 import com.olivierh.secondreality.mobile.EbitenView;
+import com.olivierh.secondreality.mobile.Mobile;
 
 import go.Seq;
 
@@ -37,6 +38,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        Mobile.pause();
         if (ebitenView != null) {
             ebitenView.suspendGame();
         }
@@ -50,6 +52,7 @@ public final class MainActivity extends Activity {
         if (ebitenView != null) {
             ebitenView.resumeGame();
         }
+        Mobile.resume();
     }
 
     @Override

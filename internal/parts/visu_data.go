@@ -10,28 +10,29 @@ import (
 )
 
 var (
-	visuDataOnce  sync.Once
-	visuDataErr   error
-	visuSinTable  []int16
-	visuAvistan   []uint16
-	visuAFillDiv  []int16
-	visuRowTable  []uint16
+	visuDataOnce sync.Once
+	visuDataErr  error
+	visuSinTable []int16
+	visuAvistan  []uint16
+	visuAFillDiv []int16
+	visuRowTable []uint16
 )
 
 func visuEnsureData() error {
 	visuDataOnce.Do(func() {
+		data := srdata.VisuData()
 		var err error
-		sinVals, err := visuExtractArrayInts(srdata.VisuData, "sintable")
+		sinVals, err := visuExtractArrayInts(data, "sintable")
 		if err != nil {
 			visuDataErr = err
 			return
 		}
-		avVals, err := visuExtractArrayInts(srdata.VisuData, "avistan")
+		avVals, err := visuExtractArrayInts(data, "avistan")
 		if err != nil {
 			visuDataErr = err
 			return
 		}
-		afVals, err := visuExtractArrayInts(srdata.VisuData, "afilldiv")
+		afVals, err := visuExtractArrayInts(data, "afilldiv")
 		if err != nil {
 			visuDataErr = err
 			return

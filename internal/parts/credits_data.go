@@ -44,114 +44,115 @@ var (
 
 func creditsEnsureData() error {
 	creditsOnce.Do(func() {
+		data := srdata.CreditsData()
 		var err error
-		creditsPic1, err = creditsExtractArray(srdata.CreditsData, "credits_pic1")
+		creditsPic1, err = creditsExtractArray(data, "credits_pic1")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic2, err = creditsExtractArray(srdata.CreditsData, "credits_pic2")
+		creditsPic2, err = creditsExtractArray(data, "credits_pic2")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic3, err = creditsExtractArray(srdata.CreditsData, "credits_pic3")
+		creditsPic3, err = creditsExtractArray(data, "credits_pic3")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic4, err = creditsExtractArray(srdata.CreditsData, "credits_pic4")
+		creditsPic4, err = creditsExtractArray(data, "credits_pic4")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic5, err = creditsExtractArray(srdata.CreditsData, "credits_pic5")
+		creditsPic5, err = creditsExtractArray(data, "credits_pic5")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic5b, err = creditsExtractArray(srdata.CreditsData, "credits_pic5b")
+		creditsPic5b, err = creditsExtractArray(data, "credits_pic5b")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic6, err = creditsExtractArray(srdata.CreditsData, "credits_pic6")
+		creditsPic6, err = creditsExtractArray(data, "credits_pic6")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic7, err = creditsExtractArray(srdata.CreditsData, "credits_pic7")
+		creditsPic7, err = creditsExtractArray(data, "credits_pic7")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic8, err = creditsExtractArray(srdata.CreditsData, "credits_pic8")
+		creditsPic8, err = creditsExtractArray(data, "credits_pic8")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic9, err = creditsExtractArray(srdata.CreditsData, "credits_pic9")
+		creditsPic9, err = creditsExtractArray(data, "credits_pic9")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic10, err = creditsExtractArray(srdata.CreditsData, "credits_pic10")
+		creditsPic10, err = creditsExtractArray(data, "credits_pic10")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic10b, err = creditsExtractArray(srdata.CreditsData, "credits_pic10b")
+		creditsPic10b, err = creditsExtractArray(data, "credits_pic10b")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic11, err = creditsExtractArray(srdata.CreditsData, "credits_pic11")
+		creditsPic11, err = creditsExtractArray(data, "credits_pic11")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic12, err = creditsExtractArray(srdata.CreditsData, "credits_pic12")
+		creditsPic12, err = creditsExtractArray(data, "credits_pic12")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic13, err = creditsExtractArray(srdata.CreditsData, "credits_pic13")
+		creditsPic13, err = creditsExtractArray(data, "credits_pic13")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic14, err = creditsExtractArray(srdata.CreditsData, "credits_pic14")
+		creditsPic14, err = creditsExtractArray(data, "credits_pic14")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic14b, err = creditsExtractArray(srdata.CreditsData, "credits_pic14b")
+		creditsPic14b, err = creditsExtractArray(data, "credits_pic14b")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic15, err = creditsExtractArray(srdata.CreditsData, "credits_pic15")
+		creditsPic15, err = creditsExtractArray(data, "credits_pic15")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic16, err = creditsExtractArray(srdata.CreditsData, "credits_pic16")
+		creditsPic16, err = creditsExtractArray(data, "credits_pic16")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic17, err = creditsExtractArray(srdata.CreditsData, "credits_pic17")
+		creditsPic17, err = creditsExtractArray(data, "credits_pic17")
 		if err != nil {
 			creditsErr = err
 			return
 		}
-		creditsPic18, err = creditsExtractArray(srdata.CreditsData, "credits_pic18")
+		creditsPic18, err = creditsExtractArray(data, "credits_pic18")
 		if err != nil {
 			creditsErr = err
 			return
 		}
 
-		creditsFont, err = creditsExtractArray(srdata.CreditsData, "credits_font")
+		creditsFont, err = creditsExtractArray(data, "credits_font")
 		if err != nil {
 			creditsErr = err
 			return

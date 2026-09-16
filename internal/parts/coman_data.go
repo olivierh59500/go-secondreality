@@ -25,18 +25,19 @@ var (
 
 func comanEnsureData() error {
 	comanOnce.Do(func() {
+		data := srdata.ComanData()
 		var err error
-		comanW1dta, err = comanExtractArray(srdata.ComanData, "w1dta")
+		comanW1dta, err = comanExtractArray(data, "w1dta")
 		if err != nil {
 			comanErr = err
 			return
 		}
-		comanW2dta, err = comanExtractArray(srdata.ComanData, "w2dta")
+		comanW2dta, err = comanExtractArray(data, "w2dta")
 		if err != nil {
 			comanErr = err
 			return
 		}
-		comanBlocks, err = comanExtractBlocks(srdata.ComanData)
+		comanBlocks, err = comanExtractBlocks(data)
 		if err != nil {
 			comanErr = err
 			return

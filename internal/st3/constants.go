@@ -25,8 +25,11 @@ func clamp[T ~int | ~int8 | ~int16 | ~int32 | ~int64](v, low, high T) T {
 }
 
 func clamp16(v int32) int32 {
-	if int16(v) != int16(v) {
-		return 0x7FFF ^ (v >> 31)
+	if v > 0x7FFF {
+		return 0x7FFF
+	}
+	if v < -0x8000 {
+		return -0x8000
 	}
 	return v
 }

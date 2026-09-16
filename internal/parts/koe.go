@@ -59,11 +59,11 @@ var (
 	koeOverYA      uint16
 	koePatDirA     int16
 
-	koeSizeFade uint16
-	koeRotSpeed uint16
-	koePalFader uint16
+	koeSizeFade  uint16
+	koeRotSpeed  uint16
+	koePalFader  uint16
 	koePalFader2 uint8 = 255
-	koeZumPlane uint8  = 0x11
+	koeZumPlane  uint8 = 0x11
 
 	koeSinusPower uint8
 	koePowerCnt   uint8
@@ -1174,11 +1174,10 @@ func koeDrawLine(x1, y1, x2, y2 uint16) {
 
 	si += int(x1 >> 3)
 	mask := uint8(0x80 >> (x1 & 7))
-	dx := int(x2) - int(x1)
 	bx := -(dy / 2)
 
 	if x1 >= x2 {
-		dx = int(x1) - int(x2)
+		dx := int(x1) - int(x2)
 		cx := dy
 		for cx > 0 {
 			if si >= 0 && si < len(koeVBuf) {
@@ -1199,7 +1198,7 @@ func koeDrawLine(x1, y1, x2, y2 uint16) {
 		return
 	}
 
-	dx = int(x2) - int(x1)
+	dx := int(x2) - int(x1)
 	cx := dy
 	for cx > 0 {
 		if si >= 0 && si < len(koeVBuf) {
@@ -1429,14 +1428,14 @@ func koeDoit1(count int) int {
 		for c := -10; c < 11; c += 2 {
 			cx := vx * c * 2
 			cy := vy * c * 2
-			x1 := (-hx - vx + cx) / 16 + 160
-			y1 := (-hy - vy + cy) / 16 + 100
-			x2 := (-hx + vx + cx) / 16 + 160
-			y2 := (-hy + vy + cy) / 16 + 100
-			x3 := (+hx + vx + cx) / 16 + 160
-			y3 := (+hy + vy + cy) / 16 + 100
-			x4 := (+hx - vx + cx) / 16 + 160
-			y4 := (+hy - vy + cy) / 16 + 100
+			x1 := (-hx-vx+cx)/16 + 160
+			y1 := (-hy-vy+cy)/16 + 100
+			x2 := (-hx+vx+cx)/16 + 160
+			y2 := (-hy+vy+cy)/16 + 100
+			x3 := (+hx+vx+cx)/16 + 160
+			y3 := (+hy+vy+cy)/16 + 100
+			x4 := (+hx-vx+cx)/16 + 160
+			y4 := (+hy-vy+cy)/16 + 100
 			koeAsmBox(x1, y1, x2, y2, x3, y3, x4, y4)
 		}
 		rot += 2
@@ -1481,14 +1480,14 @@ func koeDoit2(count int) int {
 		for c := -10; c < 11; c += 2 {
 			cx := vx * c * 2
 			cy := vy * c * 2
-			x1 := (-hx - vx + cx) / 16 + 160
-			y1 := (-hy - vy + cy) / 16 + 100
-			x2 := (-hx + vx + cx) / 16 + 160
-			y2 := (-hy + vy + cy) / 16 + 100
-			x3 := (+hx + vx + cx) / 16 + 160
-			y3 := (+hy + vy + cy) / 16 + 100
-			x4 := (+hx - vx + cx) / 16 + 160
-			y4 := (+hy - vy + cy) / 16 + 100
+			x1 := (-hx-vx+cx)/16 + 160
+			y1 := (-hy-vy+cy)/16 + 100
+			x2 := (-hx+vx+cx)/16 + 160
+			y2 := (-hy+vy+cy)/16 + 100
+			x3 := (+hx+vx+cx)/16 + 160
+			y3 := (+hy+vy+cy)/16 + 100
+			x4 := (+hx-vx+cx)/16 + 160
+			y4 := (+hy-vy+cy)/16 + 100
 			koeAsmBox(x1, y1, x2, y2, x3, y3, x4, y4)
 		}
 		rot += rota / 10
@@ -1521,8 +1520,6 @@ func koeDoit3(count int) int {
 	vma := 0
 	xpos := constants.ScreenWidth
 	xposa := 0
-	ripple := 0
-	ripplep := 8
 	repeat := 1
 
 	koeWaitBorder()
@@ -1580,14 +1577,14 @@ func koeDoit3(count int) int {
 		for c := -10; c < 11; c += 2 {
 			cx := vx * c * 2
 			cy := vy * c * 2
-			x1 := (-hx - vx + cx) / 16 + wx
-			y1 := (-hy - vy + cy) / 16 + wy
-			x2 := (-hx + vx + cx) / 16 + wx
-			y2 := (-hy + vy + cy) / 16 + wy
-			x3 := (+hx + vx + cx) / 16 + wx
-			y3 := (+hy + vy + cy) / 16 + wy
-			x4 := (+hx - vx + cx) / 16 + wx
-			y4 := (+hy - vy + cy) / 16 + wy
+			x1 := (-hx-vx+cx)/16 + wx
+			y1 := (-hy-vy+cy)/16 + wy
+			x2 := (-hx+vx+cx)/16 + wx
+			y2 := (-hy+vy+cy)/16 + wy
+			x3 := (+hx+vx+cx)/16 + wx
+			y3 := (+hy+vy+cy)/16 + wy
+			x4 := (+hx-vx+cx)/16 + wx
+			y4 := (+hy-vy+cy)/16 + wy
 			koeAsmBox(x1, y1, x2, y2, x3, y3, x4, y4)
 		}
 		rot += rota / 10
@@ -1688,8 +1685,8 @@ func koeDoit3(count int) int {
 
 	count = 50
 	c := 0
-	ripple = 0
-	ripplep = 8
+	ripple := 0
+	ripplep := 8
 	for !driver.WantsToQuit() && count > 0 {
 		if ripplep > 1023 {
 			ripplep = 1024

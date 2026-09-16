@@ -22,7 +22,8 @@ var (
 
 func koeEnsureData() error {
 	koeDataOnce.Do(func() {
-		sinVals, err := glenzExtractArrayInts(srdata.KOEData, "koe_sin1024")
+		data := srdata.KOEData()
+		sinVals, err := glenzExtractArrayInts(data, "koe_sin1024")
 		if err != nil {
 			koeDataErr = err
 			return
@@ -32,15 +33,15 @@ func koeEnsureData() error {
 			koeSin1024[i] = int16(v)
 		}
 
-		if koeCircle, err = glenzExtractArray(srdata.KOEData, "circle"); err != nil {
+		if koeCircle, err = glenzExtractArray(data, "circle"); err != nil {
 			koeDataErr = err
 			return
 		}
-		if koeCircle2, err = glenzExtractArray(srdata.KOEData, "circle2"); err != nil {
+		if koeCircle2, err = glenzExtractArray(data, "circle2"); err != nil {
 			koeDataErr = err
 			return
 		}
-		pal2Vals, err := glenzExtractArrayExprs(srdata.KOEData, "pal2_KOEA", nil)
+		pal2Vals, err := glenzExtractArrayExprs(data, "pal2_KOEA", nil)
 		if err != nil {
 			koeDataErr = err
 			return
@@ -50,7 +51,7 @@ func koeEnsureData() error {
 			koePal2KOE[i] = byte(v)
 		}
 
-		pal1Vals, err := glenzExtractArrayExprs(srdata.KOEData, "pal1_KOEA", nil)
+		pal1Vals, err := glenzExtractArrayExprs(data, "pal1_KOEA", nil)
 		if err != nil {
 			koeDataErr = err
 			return
@@ -59,11 +60,11 @@ func koeEnsureData() error {
 		for i, v := range pal1Vals {
 			koePal1KOE[i] = byte(v)
 		}
-		if koeFlip8, err = glenzExtractArray(srdata.KOEData, "flip8"); err != nil {
+		if koeFlip8, err = glenzExtractArray(data, "flip8"); err != nil {
 			koeDataErr = err
 			return
 		}
-		if koePal0, err = glenzExtractArray(srdata.KOEData, "pal0"); err != nil {
+		if koePal0, err = glenzExtractArray(data, "pal0"); err != nil {
 			koeDataErr = err
 			return
 		}

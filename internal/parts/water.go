@@ -109,13 +109,11 @@ func runWater() {
 	}
 
 	for !driver.WantsToQuit() {
-		driver.Blit()
-
-		order := music.GetOrder()
-		row := music.GetRow()
+		order, row := music.GetOrderRow()
 		if !(order == co || row < 16) {
 			break
 		}
+		driver.Vsync(false)
 	}
 
 	sss = 0

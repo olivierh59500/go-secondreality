@@ -20,28 +20,29 @@ var (
 
 func waterEnsureData() error {
 	waterOnce.Do(func() {
+		data := srdata.WaterData()
 		var err error
-		waterWat1, err = waterExtractArray(srdata.WaterData, "water_wat1")
+		waterWat1, err = waterExtractArray(data, "water_wat1")
 		if err != nil {
 			waterErr = err
 			return
 		}
-		waterWat2, err = waterExtractArray(srdata.WaterData, "water_wat2")
+		waterWat2, err = waterExtractArray(data, "water_wat2")
 		if err != nil {
 			waterErr = err
 			return
 		}
-		waterWat3, err = waterExtractArray(srdata.WaterData, "water_wat3")
+		waterWat3, err = waterExtractArray(data, "water_wat3")
 		if err != nil {
 			waterErr = err
 			return
 		}
-		waterMiekka, err = waterExtractArray(srdata.WaterData, "water_miekka")
+		waterMiekka, err = waterExtractArray(data, "water_miekka")
 		if err != nil {
 			waterErr = err
 			return
 		}
-		waterTausta, err = waterExtractArray(srdata.WaterData, "water_tausta")
+		waterTausta, err = waterExtractArray(data, "water_tausta")
 		if err != nil {
 			waterErr = err
 			return

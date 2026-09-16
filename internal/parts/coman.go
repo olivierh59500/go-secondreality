@@ -191,9 +191,7 @@ func comanDoCopy(dest []byte, startrise int) {
 	clearBase := 52 * 80 * 4
 	clearCount := 18 * 80 * 4
 	if clearBase+clearCount <= len(dest) {
-		for i := 0; i < clearCount; i++ {
-			dest[clearBase+i] = 0
-		}
+		clear(dest[clearBase : clearBase+clearCount])
 	}
 
 	lines := 140 - startrise
@@ -208,17 +206,14 @@ func comanDoCopy(dest []byte, startrise int) {
 		if sy+160 > len(src0) || dy+constants.ScreenWidth > len(dest) {
 			break
 		}
-		s := src0[sy:]
-		d := dest[dy:]
+		s := src0[sy : sy+160]
+		d := dest[dy : dy+constants.ScreenWidth]
 
 		for z := 0; z < 80; z++ {
 			a := s[z]
+			b := s[z+80]
 			d[4*z+0] = a
 			d[4*z+1] = a
-		}
-
-		for z := 0; z < 80; z++ {
-			b := s[z+80]
 			d[4*z+2] = b
 			d[4*z+3] = b
 		}
@@ -227,9 +222,7 @@ func comanDoCopy(dest []byte, startrise int) {
 	clearStart := 68 * 160
 	clearLen := 30 * 160
 	if clearStart+clearLen <= len(comanVbuf) {
-		for i := 0; i < clearLen; i++ {
-			comanVbuf[clearStart+i] = 0
-		}
+		clear(comanVbuf[clearStart : clearStart+clearLen])
 	}
 }
 

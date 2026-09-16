@@ -109,7 +109,7 @@ func runForest() {
 	scp = 133
 
 	for !driver.WantsToQuit() && music.GetPlusFlags() > 0 {
-		driver.Blit()
+		driver.Vsync(false)
 	}
 
 	sss = 0

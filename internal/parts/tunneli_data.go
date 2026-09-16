@@ -19,16 +19,17 @@ var (
 
 func tunneliEnsureData() error {
 	tunneliDataOnce.Do(func() {
+		data := srdata.TunneliData()
 		var err error
 		var raw []byte
-		raw, err = tunneliExtractArray(srdata.TunneliData, "_tunnel_sini")
+		raw, err = tunneliExtractArray(data, "_tunnel_sini")
 		if err != nil {
 			tunneliDataErr = err
 			return
 		}
 		tunneliSiniData = tunneliBytesToInt16(raw)
 
-		raw, err = tunneliExtractArray(srdata.TunneliData, "_tunnel_tun")
+		raw, err = tunneliExtractArray(data, "_tunnel_tun")
 		if err != nil {
 			tunneliDataErr = err
 			return

@@ -17,7 +17,7 @@ var (
 func endEnsureData() error {
 	endOnce.Do(func() {
 		var err error
-		endPic, err = endExtractArray(srdata.EndData, "end_pic")
+		endPic, err = endExtractArray(srdata.EndData(), "end_pic")
 		if err != nil {
 			endErr = err
 			return

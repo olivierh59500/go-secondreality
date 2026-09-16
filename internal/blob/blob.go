@@ -27,7 +27,7 @@ var (
 
 func ensureBlobs() error {
 	blobOnce.Do(func() {
-		blobs, blobErr = parseBlobData(srdata.BlobData)
+		blobs, blobErr = parseBlobData(srdata.BlobData())
 	})
 	return blobErr
 }

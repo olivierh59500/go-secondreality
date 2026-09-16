@@ -17,7 +17,7 @@ var (
 func jpEnsureData() error {
 	jpOnce.Do(func() {
 		var err error
-		jpPic, err = jpExtractArray(srdata.JPLogoData, "jl_pic")
+		jpPic, err = jpExtractArray(srdata.JPLogoData(), "jl_pic")
 		if err != nil {
 			jpErr = err
 			return

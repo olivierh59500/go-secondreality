@@ -9,51 +9,52 @@ import (
 )
 
 var (
-	lensOnce  sync.Once
-	lensErr   error
-	lensExb   []byte
-	lensEx0   []byte
-	lensEx1   []byte
-	lensEx2   []byte
-	lensEx3   []byte
-	lensEx4   []byte
-	lensExp   []byte
+	lensOnce sync.Once
+	lensErr  error
+	lensExb  []byte
+	lensEx0  []byte
+	lensEx1  []byte
+	lensEx2  []byte
+	lensEx3  []byte
+	lensEx4  []byte
+	lensExp  []byte
 )
 
 func lensEnsureData() error {
 	lensOnce.Do(func() {
+		data := srdata.LensData()
 		var err error
-		lensExb, err = lensExtractArray(srdata.LensData, "lensexbBase")
+		lensExb, err = lensExtractArray(data, "lensexbBase")
 		if err != nil {
 			lensErr = err
 			return
 		}
-		lensEx0, err = lensExtractArray(srdata.LensData, "lensex0")
+		lensEx0, err = lensExtractArray(data, "lensex0")
 		if err != nil {
 			lensErr = err
 			return
 		}
-		lensEx1, err = lensExtractArray(srdata.LensData, "lensex1")
+		lensEx1, err = lensExtractArray(data, "lensex1")
 		if err != nil {
 			lensErr = err
 			return
 		}
-		lensEx2, err = lensExtractArray(srdata.LensData, "lensex2")
+		lensEx2, err = lensExtractArray(data, "lensex2")
 		if err != nil {
 			lensErr = err
 			return
 		}
-		lensEx3, err = lensExtractArray(srdata.LensData, "lensex3")
+		lensEx3, err = lensExtractArray(data, "lensex3")
 		if err != nil {
 			lensErr = err
 			return
 		}
-		lensEx4, err = lensExtractArray(srdata.LensData, "lensex4")
+		lensEx4, err = lensExtractArray(data, "lensex4")
 		if err != nil {
 			lensErr = err
 			return
 		}
-		lensExp, err = lensExtractArray(srdata.LensData, "lensexp")
+		lensExp, err = lensExtractArray(data, "lensexp")
 		if err != nil {
 			lensErr = err
 			return

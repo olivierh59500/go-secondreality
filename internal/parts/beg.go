@@ -24,7 +24,6 @@ func runBeg() {
 		log.Printf("beg: %v", err)
 		return
 	}
-
 	shim.ClearScreen()
 
 	for i := 0; i < 32; i++ {
@@ -65,7 +64,7 @@ func runBeg() {
 func begEnsureData() error {
 	begOnce.Do(func() {
 		var err error
-		begData, err = begExtractArray(srdata.BegData, "TitleScreenData")
+		begData, err = begExtractArray(srdata.BegData(), "TitleScreenData")
 		if err != nil {
 			begErr = err
 			return

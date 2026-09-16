@@ -98,7 +98,9 @@ func Start(song Song, startOrder byte) {
 	ensureContext()
 
 	if audioPlayer != nil {
-		audioPlayer.Close()
+		if err := audioPlayer.Close(); err != nil {
+			log.Printf("music: failed to close audio player: %v", err)
+		}
 		audioPlayer = nil
 	}
 	if st3Player != nil {
@@ -140,7 +142,9 @@ func End() {
 	defer mu.Unlock()
 
 	if audioPlayer != nil {
-		audioPlayer.Close()
+		if err := audioPlayer.Close(); err != nil {
+			log.Printf("music: failed to close audio player: %v", err)
+		}
 		audioPlayer = nil
 	}
 	if st3Player != nil {
@@ -208,6 +212,18 @@ func GetOrder() int {
 
 	order, _, _ := orderRowFrameLocked()
 	return int(order)
+}
+
+func GetOrderRow() (int, int) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if st3Player == nil || fallbackSync {
+		return 0, 0
+	}
+
+	order, row, _ := orderRowFrameLocked()
+	return int(order), int(row)
 }
 
 func SetFrame(frame int) {

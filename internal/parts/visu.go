@@ -986,7 +986,6 @@ func visuPolyNrmBuild(P *visuPoly, out []uint16) int {
 	visuSwHeader(&S, P.color, uint16(top>>visuPolyOversample))
 	if top == bottom {
 		visuSwEnd(&S)
-		copy(out, S.p)
 		return len(S.p)
 	}
 	li, ri := topi, topi
@@ -1013,7 +1012,6 @@ func visuPolyNrmBuild(P *visuPoly, out []uint16) int {
 			}
 			if dy <= 0 {
 				visuSwEnd(&S)
-				copy(out, S.p)
 				return len(S.p)
 			}
 			lh = uint16(dy)
@@ -1042,7 +1040,6 @@ func visuPolyNrmBuild(P *visuPoly, out []uint16) int {
 			}
 			if dy <= 0 {
 				visuSwEnd(&S)
-				copy(out, S.p)
 				return len(S.p)
 			}
 			rh = uint16(dy)
@@ -1066,7 +1063,6 @@ func visuPolyNrmBuild(P *visuPoly, out []uint16) int {
 		}
 	}
 	visuSwEnd(&S)
-	copy(out, S.p)
 	return len(S.p)
 }
 
@@ -1089,7 +1085,6 @@ func visuPolyGrdBuild(P *visuPoly, out []uint16) int {
 	visuSwHeader(&S, P.color, uint16(top>>visuPolyOversample))
 	if top == bottom {
 		visuSwEnd(&S)
-		copy(out, S.p)
 		return len(S.p)
 	}
 	li, ri := topi, topi
@@ -1118,7 +1113,6 @@ func visuPolyGrdBuild(P *visuPoly, out []uint16) int {
 			}
 			if dy <= 0 {
 				visuSwEnd(&S)
-				copy(out, S.p)
 				return len(S.p)
 			}
 			lh = uint16(dy)
@@ -1147,7 +1141,6 @@ func visuPolyGrdBuild(P *visuPoly, out []uint16) int {
 			}
 			if dy <= 0 {
 				visuSwEnd(&S)
-				copy(out, S.p)
 				return len(S.p)
 			}
 			rh = uint16(dy)
@@ -1171,7 +1164,6 @@ func visuPolyGrdBuild(P *visuPoly, out []uint16) int {
 		}
 	}
 	visuSwEnd(&S)
-	copy(out, S.p)
 	return len(S.p)
 }
 
@@ -1390,7 +1382,7 @@ func visuNewClip(P **visuPoly, tmp *visuPoly, visAnd, visOr uint8) {
 	}
 	if visOr&visuVFRight != 0 {
 		visuSideClip(in, out, func(x, y int16) bool { return visuOutRight(x, y) }, false, visuProjClipX[1])
-		in, out = out, in
+		in = out
 		if in.sides < 3 {
 			in.sides = 0
 			*P = in

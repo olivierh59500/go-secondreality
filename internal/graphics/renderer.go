@@ -1,6 +1,7 @@
 package graphics
 
 import (
+	"encoding/binary"
 	"image"
 	"image/color"
 	"sync"
@@ -16,53 +17,61 @@ type Mode struct {
 	JSSS   float32
 }
 
+type frameSnapshot struct {
+	indices []byte
+	palette [constants.PaletteColorCount]uint32
+	mode    Mode
+	valid   bool
+}
+
 type Renderer struct {
-	mu            sync.Mutex
-	renderVram    []byte
-	renderPalette [constants.PaletteColorCount][4]byte
-	startPixel    int
-	mode          Mode
-	framePixels   []byte
-	frameImage    *ebiten.Image
+	mu      sync.Mutex
+	pending *frameSnapshot
+	display *frameSnapshot
+	dirty   bool
+
+	framePixels []byte
+	frameImage  *ebiten.Image
+	sourceImage *ebiten.Image
+	displayMode Mode
+	hasFrame    bool
 }
 
 func NewRenderer() *Renderer {
+	const maxPixels = constants.VirtualScreenWidth * constants.VirtualScreenHeight
 	return &Renderer{
-		renderVram:  make([]byte, constants.VRAMX*constants.VRAMY),
-		framePixels: make([]byte, constants.VirtualScreenWidth*constants.VirtualScreenHeight*4),
-		frameImage:  ebiten.NewImage(constants.VirtualScreenWidth, constants.VirtualScreenHeight),
-		mode: Mode{
-			Width:  constants.ScreenWidth,
-			Height: constants.ScreenHeight,
-			JSSS:   0.80,
+		pending: &frameSnapshot{
+			indices: make([]byte, maxPixels),
+			mode:    Mode{Width: constants.ScreenWidth, Height: constants.ScreenHeight, JSSS: 0.80},
 		},
+		display: &frameSnapshot{
+			indices: make([]byte, maxPixels),
+			mode:    Mode{Width: constants.ScreenWidth, Height: constants.ScreenHeight, JSSS: 0.80},
+		},
+		framePixels: make([]byte, maxPixels*4),
+		frameImage:  ebiten.NewImage(constants.VirtualScreenWidth, constants.VirtualScreenHeight),
 	}
-}
-
-func (r *Renderer) Clear() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	clear(r.framePixels)
 }
 
 func (r *Renderer) Capture(mode Mode, vram []byte, palette *[constants.PaletteColorCount][4]byte, startPixel int) {
+	pixelCount, valid := modePixelCount(mode)
+	valid = valid && palette != nil && startPixel >= 0 && startPixel <= len(vram)-pixelCount
+
 	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.mode = mode
-	r.startPixel = startPixel
-	copy(r.renderVram, vram)
-
-	for i := 0; i < constants.PaletteColorCount; i++ {
-		b := palette[i][0]
-		g := palette[i][1]
-		rc := palette[i][2]
-		r.renderPalette[i][0] = rc
-		r.renderPalette[i][1] = g
-		r.renderPalette[i][2] = b
-		r.renderPalette[i][3] = 0xFF
+	snapshot := r.pending
+	snapshot.mode = mode
+	snapshot.valid = valid
+	if valid {
+		copy(snapshot.indices[:pixelCount], vram[startPixel:startPixel+pixelCount])
+		for i := 0; i < constants.PaletteColorCount; i++ {
+			b := uint32(palette[i][0])
+			g := uint32(palette[i][1])
+			red := uint32(palette[i][2])
+			snapshot.palette[i] = red | g<<8 | b<<16 | 0xFF<<24
+		}
 	}
+	r.dirty = true
+	r.mu.Unlock()
 }
 
 func (r *Renderer) Draw(screen *ebiten.Image) {
@@ -70,13 +79,13 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 		return
 	}
 
-	screen.Fill(color.Black)
-
-	r.mu.Lock()
-	r.fillFrameLocked()
-	r.frameImage.WritePixels(r.framePixels)
-	mode := r.mode
-	r.mu.Unlock()
+	if r.consumePendingFrame() {
+		r.uploadDisplayFrame()
+	}
+	if !r.hasFrame || r.sourceImage == nil {
+		screen.Fill(color.Black)
+		return
+	}
 
 	sw := screen.Bounds().Dx()
 	sh := screen.Bounds().Dy()
@@ -95,54 +104,117 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 	destH := ratio * constants.ScreenHeight
 	posX := (sw - destW) / 2
 	posY := (sh - destH) / 2
-
-	srcX := 0
-	srcY := 0
-	if mode.Width == constants.VirtualScreenWidth && mode.Height == 350 {
-		srcY = (constants.VirtualScreenHeight - mode.Height) / 2
+	if destW != sw || destH != sh {
+		screen.Fill(color.Black)
 	}
 
-	srcRect := image.Rect(srcX, srcY, srcX+mode.Width, srcY+mode.Height)
-	sub := r.frameImage.SubImage(srcRect).(*ebiten.Image)
-
-	scaleX := float64(destW) / float64(mode.Width)
-	scaleY := float64(destH) / float64(mode.Height)
-
-	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Scale(scaleX, scaleY)
+	var opts ebiten.DrawImageOptions
+	opts.GeoM.Scale(
+		float64(destW)/float64(r.displayMode.Width),
+		float64(destH)/float64(r.displayMode.Height),
+	)
 	opts.GeoM.Translate(float64(posX), float64(posY))
 	opts.Filter = ebiten.FilterNearest
 
-	screen.DrawImage(sub, opts)
+	screen.DrawImage(r.sourceImage, &opts)
 }
 
-func (r *Renderer) fillFrameLocked() {
-	clear(r.framePixels)
+func (r *Renderer) consumePendingFrame() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.dirty {
+		return false
+	}
+	r.pending, r.display = r.display, r.pending
+	r.dirty = false
+	return true
+}
 
-	mode := r.mode
-	if mode.Width == 0 || mode.Height == 0 {
+func (r *Renderer) uploadDisplayFrame() {
+	snapshot := r.display
+	if !snapshot.valid {
+		if r.hasFrame {
+			r.refreshDisplayFrame()
+			return
+		}
+		r.hasFrame = false
+		r.sourceImage = nil
 		return
 	}
 
-	srcIndex := r.startPixel
-	dstYStart := 0
-	if mode.Width == constants.VirtualScreenWidth && mode.Height == 350 {
-		dstYStart = (constants.VirtualScreenHeight - mode.Height) / 2
+	pixelCount, valid := modePixelCount(snapshot.mode)
+	if !valid {
+		if r.hasFrame {
+			r.refreshDisplayFrame()
+			return
+		}
+		r.hasFrame = false
+		r.sourceImage = nil
+		return
+	}
+	if r.hasFrame && frameSnapshotIsEffectivelyBlack(snapshot, pixelCount) {
+		r.refreshDisplayFrame()
+		return
 	}
 
-	for y := 0; y < mode.Height; y++ {
-		dstRow := (dstYStart + y) * constants.VirtualScreenWidth
-		for x := 0; x < mode.Width; x++ {
-			if srcIndex < 0 || srcIndex >= len(r.renderVram) {
-				return
-			}
-			color := r.renderPalette[r.renderVram[srcIndex]]
-			di := (dstRow + x) * 4
-			r.framePixels[di] = color[0]
-			r.framePixels[di+1] = color[1]
-			r.framePixels[di+2] = color[2]
-			r.framePixels[di+3] = color[3]
-			srcIndex++
+	pixels := r.framePixels[:pixelCount*4]
+	fillFramePixels(pixels, snapshot.indices[:pixelCount], &snapshot.palette)
+
+	srcY := 0
+	if snapshot.mode.Width == constants.VirtualScreenWidth && snapshot.mode.Height == 350 {
+		srcY = (constants.VirtualScreenHeight - snapshot.mode.Height) / 2
+	}
+	srcRect := image.Rect(0, srcY, snapshot.mode.Width, srcY+snapshot.mode.Height)
+	source := r.frameImage.SubImage(srcRect).(*ebiten.Image)
+	source.WritePixels(pixels)
+
+	r.sourceImage = source
+	r.displayMode = snapshot.mode
+	r.hasFrame = true
+}
+
+func (r *Renderer) refreshDisplayFrame() {
+	if !r.hasFrame || r.sourceImage == nil {
+		return
+	}
+	pixelCount, valid := modePixelCount(r.displayMode)
+	if !valid {
+		return
+	}
+	r.sourceImage.WritePixels(r.framePixels[:pixelCount*4])
+}
+
+func frameSnapshotIsEffectivelyBlack(snapshot *frameSnapshot, pixelCount int) bool {
+	// This is an average RGB energy of roughly 0.01% of full scale. It catches
+	// empty transition frames while preserving intentional very-dark fades.
+	minimumColorEnergy := uint64(pixelCount) / 13
+	if minimumColorEnergy == 0 {
+		minimumColorEnergy = 1
+	}
+	var colorEnergy uint64
+	for _, index := range snapshot.indices[:pixelCount] {
+		color := snapshot.palette[index]
+		colorEnergy += uint64(color&0xFF) + uint64((color>>8)&0xFF) + uint64((color>>16)&0xFF)
+		if colorEnergy > minimumColorEnergy {
+			return false
 		}
+	}
+	return true
+}
+
+func modePixelCount(mode Mode) (int, bool) {
+	if mode.Width <= 0 || mode.Width > constants.VirtualScreenWidth ||
+		mode.Height <= 0 || mode.Height > constants.VirtualScreenHeight {
+		return 0, false
+	}
+	return mode.Width * mode.Height, true
+}
+
+func fillFramePixels(dst, indices []byte, palette *[constants.PaletteColorCount]uint32) {
+	if len(dst) < len(indices)*4 {
+		return
+	}
+	for i, index := range indices {
+		binary.LittleEndian.PutUint32(dst[i*4:], palette[index])
 	}
 }

@@ -20,28 +20,29 @@ var (
 
 func forestEnsureData() error {
 	forestOnce.Do(func() {
+		data := srdata.ForestData()
 		var err error
-		forestPosi1, err = forestExtractArray(srdata.ForestData, "forest_posi1")
+		forestPosi1, err = forestExtractArray(data, "forest_posi1")
 		if err != nil {
 			forestErr = err
 			return
 		}
-		forestPosi2, err = forestExtractArray(srdata.ForestData, "forest_posi2")
+		forestPosi2, err = forestExtractArray(data, "forest_posi2")
 		if err != nil {
 			forestErr = err
 			return
 		}
-		forestPosi3, err = forestExtractArray(srdata.ForestData, "forest_posi3")
+		forestPosi3, err = forestExtractArray(data, "forest_posi3")
 		if err != nil {
 			forestErr = err
 			return
 		}
-		forestHBack, err = forestExtractArray(srdata.ForestData, "forest_hback")
+		forestHBack, err = forestExtractArray(data, "forest_hback")
 		if err != nil {
 			forestErr = err
 			return
 		}
-		forestO2, err = forestExtractArray(srdata.ForestData, "forest_o2")
+		forestO2, err = forestExtractArray(data, "forest_o2")
 		if err != nil {
 			forestErr = err
 			return

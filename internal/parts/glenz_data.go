@@ -10,36 +10,37 @@ import (
 )
 
 var (
-	glenzDataOnce  sync.Once
-	glenzDataErr   error
-	glenzFC        []byte
-	glenzSinTable  []int16
-	glenzCosTable  []int16
-	glenzPoints    []int32
-	glenzPointsB   []int32
-	glenzEPolys    []uint16
-	glenzEPolysB   []uint16
+	glenzDataOnce sync.Once
+	glenzDataErr  error
+	glenzFC       []byte
+	glenzSinTable []int16
+	glenzCosTable []int16
+	glenzPoints   []int32
+	glenzPointsB  []int32
+	glenzEPolys   []uint16
+	glenzEPolysB  []uint16
 )
 
 func glenzEnsureData() error {
 	glenzDataOnce.Do(func() {
+		data := srdata.GlenzData()
 		var err error
-		glenzFC, err = glenzExtractArray(srdata.GlenzData, "fc")
+		glenzFC, err = glenzExtractArray(data, "fc")
 		if err != nil {
 			glenzDataErr = err
 			return
 		}
-		sinVals, err := glenzExtractArrayInts(srdata.GlenzData, "sintable16")
+		sinVals, err := glenzExtractArrayInts(data, "sintable16")
 		if err != nil {
 			glenzDataErr = err
 			return
 		}
-		cosVals, err := glenzExtractArrayInts(srdata.GlenzData, "costable16")
+		cosVals, err := glenzExtractArrayInts(data, "costable16")
 		if err != nil {
 			glenzDataErr = err
 			return
 		}
-		pointVals, err := glenzExtractArrayExprs(srdata.GlenzData, "points", map[string]int{
+		pointVals, err := glenzExtractArrayExprs(data, "points", map[string]int{
 			"ZZZ": 50,
 			"QQQ": 99,
 		})
@@ -47,7 +48,7 @@ func glenzEnsureData() error {
 			glenzDataErr = err
 			return
 		}
-		pointBVals, err := glenzExtractArrayExprs(srdata.GlenzData, "pointsb", map[string]int{
+		pointBVals, err := glenzExtractArrayExprs(data, "pointsb", map[string]int{
 			"ZZZ": 50,
 			"QQQ": 99,
 		})
@@ -55,12 +56,12 @@ func glenzEnsureData() error {
 			glenzDataErr = err
 			return
 		}
-		epolysVals, err := glenzExtractArrayInts(srdata.GlenzData, "epolys")
+		epolysVals, err := glenzExtractArrayInts(data, "epolys")
 		if err != nil {
 			glenzDataErr = err
 			return
 		}
-		epolysBVals, err := glenzExtractArrayInts(srdata.GlenzData, "epolysb")
+		epolysBVals, err := glenzExtractArrayInts(data, "epolysb")
 		if err != nil {
 			glenzDataErr = err
 			return

@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -16,6 +17,9 @@ var (
 	lastVblank  time.Time
 	wantsToQuit atomic.Bool
 	currentMode = graphics.Mode{Width: 320, Height: 200, JSSS: shim.DefaultJSSS}
+	timingMu    sync.Mutex
+	timingCond  = sync.NewCond(&timingMu)
+	paused      bool
 )
 
 func SetRenderer(r *graphics.Renderer) {
@@ -25,9 +29,6 @@ func SetRenderer(r *graphics.Renderer) {
 func ChangeMode(width, height int, jsss float32) {
 	currentMode = graphics.Mode{Width: width, Height: height, JSSS: jsss}
 	common.Reset()
-	if renderer != nil {
-		renderer.Clear()
-	}
 }
 
 func Blit() {
@@ -45,9 +46,23 @@ func RequestQuit() {
 	wantsToQuit.Store(true)
 }
 
-func Vsync(updateAudio bool) int {
-	if updateAudio {
-		// Audio update will be wired later.
+func SetPaused(value bool) {
+	timingMu.Lock()
+	if paused != value {
+		paused = value
+		if !paused {
+			lastVblank = time.Time{}
+			timingCond.Broadcast()
+		}
+	}
+	timingMu.Unlock()
+}
+
+func Vsync(_ bool) int {
+	timingMu.Lock()
+	defer timingMu.Unlock()
+	for paused {
+		timingCond.Wait()
 	}
 
 	cycle := time.Second / time.Duration(vblankHz)

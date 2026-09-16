@@ -2,14 +2,12 @@ package music
 
 import (
 	"io"
-	"sync"
 	"unsafe"
 
 	"go-secondreality/internal/st3"
 )
 
 type st3Stream struct {
-	mu     sync.Mutex
 	player *st3.Player
 }
 
@@ -18,9 +16,6 @@ func newStream(player *st3.Player) io.Reader {
 }
 
 func (s *st3Stream) Read(p []byte) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if s.player == nil {
 		for i := range p {
 			p[i] = 0
