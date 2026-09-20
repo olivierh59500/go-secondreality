@@ -1,12 +1,12 @@
 package graphics
 
 import (
-	"encoding/binary"
+	"github.com/olivierh59500/democonstructionkit/indexed"
 	"image"
 	"image/color"
 	"sync"
 
-	"go-secondreality/internal/constants"
+	"go-secondreality/dck/internal/constants"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -211,10 +211,5 @@ func modePixelCount(mode Mode) (int, bool) {
 }
 
 func fillFramePixels(dst, indices []byte, palette *[constants.PaletteColorCount]uint32) {
-	if len(dst) < len(indices)*4 {
-		return
-	}
-	for i, index := range indices {
-		binary.LittleEndian.PutUint32(dst[i*4:], palette[index])
-	}
+	_ = indexed.ExpandRGBA(dst, indices, palette)
 }
