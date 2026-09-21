@@ -13,6 +13,8 @@ type Game struct {
 	renderer  *graphics.Renderer
 	demoCfg   demo.Config
 	demoReady bool
+	recording *driver.FrameClock
+	done      chan struct{}
 }
 
 func newGame(renderer *graphics.Renderer, demoCfg demo.Config) *Game {
@@ -22,7 +24,11 @@ func newGame(renderer *graphics.Renderer, demoCfg demo.Config) *Game {
 func (g *Game) Update() error {
 	if !g.demoReady {
 		g.demoReady = true
-		go demo.Run(g.demoCfg)
+		g.done = make(chan struct{})
+		go func() { defer close(g.done); demo.Run(g.demoCfg) }()
+	}
+	if g.recording != nil && !g.recording.Step(g.done) {
+		return ebiten.Termination
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) || ebiten.IsWindowBeingClosed() {
@@ -32,6 +38,24 @@ func (g *Game) Update() error {
 
 	return nil
 }
+
+// NewRecordingGame keeps the original music-driven sequence at 70 Hz.
+func NewRecordingGame(cfg Config) *Game {
+	g := NewGame(cfg)
+	g.recording = driver.NewFrameClock()
+	return g
+}
+
+func (g *Game) Close() {
+	if g.recording != nil {
+		g.recording.Close()
+		if g.done != nil {
+			<-g.done
+		}
+	}
+}
+
+func (g *Game) RecordingChapter() string { return demo.CurrentPart() }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.renderer.Draw(screen)

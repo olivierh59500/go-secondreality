@@ -125,6 +125,7 @@ func endscrlDoScroll() {
 	endscrlSetStart(endscrlYscrl * 640)
 
 	if endscrlTextline[0] == '%' {
+		driver.FinishRecording()
 		endscrlTptr = 0
 	}
 }

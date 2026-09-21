@@ -59,6 +59,9 @@ func SetPaused(value bool) {
 }
 
 func Vsync(_ bool) int {
+	if recordingClock != nil {
+		return recordingClock.vblank()
+	}
 	timingMu.Lock()
 	defer timingMu.Unlock()
 	for paused {

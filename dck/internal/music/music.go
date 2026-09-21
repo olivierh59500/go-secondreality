@@ -8,7 +8,7 @@ import (
 
 	"go-secondreality/dck/internal/st3"
 
-	"github.com/hajimehoshi/ebiten/v2/audio"
+	audio "github.com/olivierh59500/democonstructionkit/sound/output"
 )
 
 type Song int
@@ -108,10 +108,10 @@ func Start(song Song, startOrder byte) {
 		st3Player = nil
 	}
 	lastFrame = 0
-	lastFrameTime = time.Now()
+	lastFrameTime = audio.Now()
 	fallbackSync = false
 	fallbackBase = 0
-	fallbackStart = time.Now()
+	fallbackStart = audio.Now()
 
 	offset := songOffset(song)
 	player, err := st3.New(RealityFC[offset:], st3.Config{SampleRate: sampleRate, Interpolation: true, StartOrder: int(startOrder)})
@@ -119,7 +119,7 @@ func Start(song Song, startOrder byte) {
 		log.Printf("music: failed to start song: %v", err)
 		fallbackSync = true
 		fallbackBase = 0
-		fallbackStart = time.Now()
+		fallbackStart = audio.Now()
 		return
 	}
 
@@ -164,7 +164,7 @@ func Sync() int {
 
 	order, row, frame := orderRowFrameLocked()
 	orderAndRow := (order << 8) | row
-	now := time.Now()
+	now := audio.Now()
 	if frame != lastFrame {
 		lastFrame = frame
 		lastFrameTime = now
@@ -283,7 +283,7 @@ func syncFallbackLocked() int {
 		return 0
 	}
 	const step = 3 * time.Second
-	elapsed := time.Since(fallbackStart)
+	elapsed := audio.Now().Sub(fallbackStart)
 	advance := int(elapsed / step)
 	return fallbackBase + advance
 }

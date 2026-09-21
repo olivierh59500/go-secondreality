@@ -5,7 +5,19 @@ import (
 	"go-secondreality/dck/internal/music"
 	"go-secondreality/dck/internal/parts"
 	"go-secondreality/dck/internal/shim"
+	"sync/atomic"
 )
+
+var currentPart atomic.Value
+
+func CurrentPart() string {
+	if name := currentPart.Load(); name != nil {
+		return name.(string)
+	}
+	return ""
+}
+
+var partNames = []string{"Opening I", "Opening II", "Opening III", "Logo", "Glenz", "Dot tunnel", "Techno", "Shutdown", "Mountain scroll", "Rotozoomer", "Plasma cube", "Vectorballs", "Water", "3D sinusfield", "Jelly logo", "Vector part II", "End picture", "Credits and greetings", "Final scroll", "", "Hidden part"}
 
 type StartPart int
 
@@ -83,6 +95,9 @@ func Run(cfg Config) {
 	for {
 		for i := startIdx; i < len(partList) && partList[i].Width != 0; i++ {
 			info := partList[i]
+			if i < len(partNames) {
+				currentPart.Store(partNames[i])
+			}
 			if info.Music != lastMusic {
 				lastMusic = info.Music
 				music.Start(info.Music, info.MusicStartOrder)
