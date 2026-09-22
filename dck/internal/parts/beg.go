@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+
+	"github.com/olivierh59500/democonstructionkit/indexed"
 	"sync"
 
 	srdata "go-secondreality/dck"
@@ -50,8 +52,9 @@ func runBeg() {
 
 	pal2 := make([]byte, constants.PaletteByteCount)
 	for c := 0; c <= 128; c++ {
-		for i := 0; i < constants.PaletteByteCount-3; i++ {
-			pal2[i] = byte(((128-c)*63 + int(palette[i])*c) / 128)
+		if err := indexed.FadePalette(pal2[:constants.PaletteByteCount-3], palette[:constants.PaletteByteCount-3], [3]byte{63, 63, 63}, uint32(128-c), 128); err != nil {
+			log.Printf("palette: %v", err)
+			return
 		}
 		driver.Vsync(false)
 		common.SetPalArea(pal2, 0, 254)

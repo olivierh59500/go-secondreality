@@ -1,8 +1,9 @@
 package parts
 
 import (
-	"encoding/binary"
 	"log"
+
+	"github.com/olivierh59500/democonstructionkit/indexed"
 
 	"go-secondreality/dck/internal/constants"
 	"go-secondreality/dck/internal/driver"
@@ -17,10 +18,21 @@ const (
 	waterFBSize           = waterFBW * waterFBH
 )
 
+var waterMaps [3]*indexed.ScatterMap
+
 func runWater() {
 	if err := waterEnsureData(); err != nil {
 		log.Printf("water: %v", err)
 		return
+	}
+
+	if waterMaps[0] == nil {
+		maps, err := compileScatterMaps([3][]byte{waterWat1, waterWat2, waterWat3}, waterFBSize, constants.ScreenSize)
+		if err != nil {
+			log.Printf("water: %v", err)
+			return
+		}
+		waterMaps = maps
 	}
 
 	pal := make([]byte, constants.PaletteByteCount)
@@ -179,44 +191,10 @@ func runWater() {
 }
 
 func waterScr(pos uint16, fbuf []byte, bg []byte) {
-	switch pos {
-	case 0:
-		waterPutrouts1(waterWat1, fbuf, bg)
-	case 1:
-		waterPutrouts1(waterWat2, fbuf, bg)
-	case 2:
-		waterPutrouts1(waterWat3, fbuf, bg)
-	}
-}
-
-func waterPutrouts1(src []byte, fbuf []byte, bg []byte) {
-	if len(src) < 2 {
+	if int(pos) >= len(waterMaps) {
 		return
 	}
-	idx := 0
-	for index := 0; index < waterFBSize && idx+2 <= len(src); index++ {
-		n := int(binary.LittleEndian.Uint16(src[idx:]))
-		idx += 2
-		if n == 0 {
-			continue
-		}
-		v := byte(0)
-		if index < len(fbuf) {
-			v = fbuf[index]
-		}
-		for k := 0; k < n && idx+2 <= len(src); k++ {
-			off := int(binary.LittleEndian.Uint16(src[idx:]))
-			idx += 2
-			if off < 0 || off >= len(shim.VRAM) {
-				continue
-			}
-			if v != 0 {
-				shim.VRAM[off] = v
-				continue
-			}
-			if off >= 0 && off < len(bg) {
-				shim.VRAM[off] = bg[off]
-			}
-		}
+	if err := waterMaps[pos].Render(shim.VRAM, fbuf, bg, indexed.ScatterOverBackground); err != nil {
+		log.Printf("water: %v", err)
 	}
 }

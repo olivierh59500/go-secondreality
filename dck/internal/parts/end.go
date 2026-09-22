@@ -3,6 +3,8 @@ package parts
 import (
 	"log"
 
+	"github.com/olivierh59500/democonstructionkit/indexed"
+
 	"go-secondreality/dck/internal/common"
 	"go-secondreality/dck/internal/constants"
 	"go-secondreality/dck/internal/driver"
@@ -46,8 +48,9 @@ func runEnd() {
 	}
 
 	for c := 0; c <= 128; c++ {
-		for a := 0; a < constants.PaletteByteCount-3; a++ {
-			pal2[a] = byte(((128-c)*63 + int(palette[a])*c) / 128)
+		if err := indexed.FadePalette(pal2[:constants.PaletteByteCount-3], palette[:constants.PaletteByteCount-3], [3]byte{63, 63, 63}, uint32(128-c), 128); err != nil {
+			log.Printf("palette: %v", err)
+			return
 		}
 
 		driver.Vsync(false)
@@ -64,8 +67,9 @@ func runEnd() {
 	}
 
 	for c := 63; c >= 0; c-- {
-		for a := 0; a < constants.PaletteByteCount-3; a++ {
-			pal2[a] = byte((int(palette[a]) * c) / 64)
+		if err := indexed.FadePalette(pal2[:constants.PaletteByteCount-3], palette[:constants.PaletteByteCount-3], [3]byte{}, uint32(64-c), 64); err != nil {
+			log.Printf("palette: %v", err)
+			return
 		}
 		driver.Vsync(false)
 		common.SetPalArea(pal2, 0, constants.PaletteColorCount-1)

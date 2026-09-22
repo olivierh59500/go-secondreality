@@ -10,8 +10,8 @@ github.com/hajimehoshi/ebiten/v2 v2.9.11 h1:VXnv8jHvTHEeLBoPKEvPdywwJdcemur+EoXE
 github.com/hajimehoshi/ebiten/v2 v2.9.11/go.mod h1:UqZjna6ppO9dTZtO97LySdB5ustokqOcQKrAfWPrVro=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
 github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
-github.com/olivierh59500/democonstructionkit v0.0.0-20260922141513-c2257ea1b7a5 h1:Q4T6lvHv//gffHshLXGNCgE/L+gBlPBlTHESWoMGZAw=
-github.com/olivierh59500/democonstructionkit v0.0.0-20260922141513-c2257ea1b7a5/go.mod h1:YutRTJylm2yuwht3xPH7r9HTw9O4l7CbdGcVTMEW0qU=
+github.com/olivierh59500/democonstructionkit v0.0.0-20260922224241-0620f55a8ab4 h1:e1IlLWab9wbHHehPW7n/HW/NkR7puY6EGqWrPsaBdDU=
+github.com/olivierh59500/democonstructionkit v0.0.0-20260922224241-0620f55a8ab4/go.mod h1:YutRTJylm2yuwht3xPH7r9HTw9O4l7CbdGcVTMEW0qU=
 golang.org/x/image v0.43.0 h1:FLxcP4ec2350nTfOC8ysKtqYSIFbk/QGjw1ZHNP4tsY=
 golang.org/x/image v0.43.0/go.mod h1:rrpelvGFt+kLPAjPM4HeWPgrl0FtafueU//e5N0qk/Q=
 golang.org/x/sync v0.21.0 h1:HLII4xRRTtCRkxYp4HNFF0Js/Og6q2i++KXbg0gHCwM=

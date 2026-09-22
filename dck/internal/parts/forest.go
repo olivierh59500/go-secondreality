@@ -3,16 +3,29 @@ package parts
 import (
 	"log"
 
+	"github.com/olivierh59500/democonstructionkit/indexed"
+
 	"go-secondreality/dck/internal/constants"
 	"go-secondreality/dck/internal/driver"
 	"go-secondreality/dck/internal/music"
 	"go-secondreality/dck/internal/shim"
 )
 
+var forestMaps [3]*indexed.ScatterMap
+
 func runForest() {
 	if err := forestEnsureData(); err != nil {
 		log.Printf("forest: %v", err)
 		return
+	}
+
+	if forestMaps[0] == nil {
+		maps, err := compileScatterMaps([3][]byte{forestPosi1, forestPosi2, forestPosi3}, 237*31, constants.ScreenSize)
+		if err != nil {
+			log.Printf("forest: %v", err)
+			return
+		}
+		forestMaps = maps
 	}
 
 	fbuf := make([]byte, constants.VirtualScreenWidth*31)
@@ -180,15 +193,14 @@ func runForest() {
 }
 
 func forestStep(scp *uint16, sss *uint16, font []byte, fbuf []byte) {
-	switch *sss {
-	case 0:
-		forestPutroutsFromStream(forestPosi1, font)
-	case 1:
-		forestPutroutsFromStream(forestPosi2, font)
-	default:
-		forestPutroutsFromStream(forestPosi3, font)
+	if err := forestMaps[*sss].Render(shim.VRAM, font, forestHBack[778:], indexed.ScatterAddBackground); err != nil {
+		log.Printf("forest: %v", err)
+		return
+	}
+	if *sss == 2 {
 		forestScrollFont(font, fbuf, scp)
 	}
+
 	if *sss == 2 {
 		*sss = 0
 	} else {
@@ -210,35 +222,5 @@ func forestScrollFont(font []byte, fbuf []byte, scp *uint16) {
 	}
 	if *scp < constants.VirtualScreenWidth-1 {
 		*scp++
-	}
-}
-
-func forestPutroutsFromStream(pos []byte, font []byte) {
-	if len(forestHBack) < 778+constants.ScreenSize {
-		return
-	}
-	bg := forestHBack[778:]
-	p := 0
-	fontIdx := 0
-	blocks := 237 * 31
-	for b := 0; b < blocks && fontIdx < len(font); b++ {
-		if p+2 > len(pos) {
-			return
-		}
-		count := int(pos[p]) | int(pos[p+1])<<8
-		p += 2
-		if count > 0 {
-			if p+2*count > len(pos) {
-				count = (len(pos) - p) / 2
-			}
-			for i := 0; i < count; i++ {
-				dest := int(pos[p]) | int(pos[p+1])<<8
-				p += 2
-				if dest >= 0 && dest < constants.ScreenSize && dest < len(bg) && dest < len(shim.VRAM) {
-					shim.VRAM[dest] = bg[dest] + font[fontIdx]
-				}
-			}
-		}
-		fontIdx++
 	}
 }

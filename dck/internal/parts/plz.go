@@ -4,6 +4,8 @@ import (
 	"log"
 	"math"
 
+	"github.com/olivierh59500/democonstructionkit/plasma"
+
 	"go-secondreality/dck/internal/common"
 	"go-secondreality/dck/internal/constants"
 	"go-secondreality/dck/internal/driver"
@@ -112,6 +114,7 @@ var (
 	plzFromBase int
 	plzDsegBase int
 
+	plzKernel   *plasma.Lookup
 	plzYY       int
 	plzAX1      int32
 	plzAX2      int32
@@ -158,10 +161,6 @@ var (
 	plzIK4      int
 	plzFadePal  [2 * constants.PaletteByteCount]byte
 	plzDropY    int
-	plzLC1      [plzSize]int
-	plzLC2      [plzSize]int
-	plzLC3      [plzSize]int
-	plzLC4      [plzSize]int
 	plzFpal     [constants.PaletteByteCount]byte
 	plzPolys    int
 	plzLightSrc [6]int
@@ -217,6 +216,13 @@ var (
 
 func runPLZ() {
 	if err := plzEnsureData(); err != nil {
+		log.Printf("plz: %v", err)
+		return
+	}
+
+	var err error
+	plzKernel, err = plzCreatePlasma()
+	if err != nil {
 		log.Printf("plz: %v", err)
 		return
 	}
@@ -335,56 +341,6 @@ func plzDoDrop() {
 
 		hi := uint16(accHi[i]) + uint16(ah) + uint16(lo>>8)
 		accHi[i] = byte(hi & 0xFF)
-	}
-}
-
-func plzRd16(buf []byte, offset int) uint16 {
-	idx := offset & (plzSinBufferSize - 1)
-	idx &^= 1
-	if idx+1 >= len(buf) {
-		return 0
-	}
-	return uint16(buf[idx]) | uint16(buf[idx+1])<<8
-}
-
-func plzRd8(buf []byte, offset int) byte {
-	idx := offset & (plzSinBufferSize - 1)
-	if idx < 0 || idx >= len(buf) {
-		return 0
-	}
-	return buf[idx]
-}
-
-func plzCCCFromK(k int) int {
-	return (k &^ 3) + (3 - (k & 3))
-}
-
-func plzSetParas(c1, c2, c3, c4 int) {
-	C1 := uint32(uint16(c1))
-	C2 := uint32(uint16(c2))
-	C3 := uint32(uint16(c3))
-	C4 := uint32(uint16(c4))
-	for ccc := 0; ccc < plzSize; ccc++ {
-		plzLC1[ccc] = int(C1 + uint32(8*ccc))
-		plzLC2[ccc] = int((C2 << 1) + uint32(80*8-8*ccc))
-		plzLC3[ccc] = int(C3 + uint32(80*4-4*ccc))
-		plzLC4[ccc] = int((C4 << 1) + uint32(32*ccc))
-	}
-}
-
-func plzLine(y int, vseg []byte) {
-	y2 := uint32(uint16(y)) << 1
-	var out [plzSize]byte
-	for k := 0; k < plzSize; k++ {
-		ccc := plzCCCFromK(k)
-		bx1 := plzRd16(plzLsini16, plzLC2[ccc]+int(y2))
-		s1 := plzRd8(plzPSini, plzLC1[ccc]+int(bx1))
-		bx2 := plzRd16(plzLsini4, plzLC4[ccc]+int(y2))
-		s2 := plzRd8(plzPSini, plzLC3[ccc]+int(bx2)+int(y2))
-		out[ccc] = byte(uint16(s1) + uint16(s2))
-	}
-	if len(vseg) >= plzSize {
-		copy(vseg[:plzSize], out[:])
 	}
 }
 
@@ -586,28 +542,11 @@ func plzMain() {
 			break
 		}
 
-		plzSetParas(plzK1, plzK2, plzK3, plzK4)
-		for y := 0; y < plzMaxY; y += 2 {
-			offset := y*plzSize + plzYAdd*6
-			plzLine(y, plzVidMem[0][offset:])
-		}
-
-		plzSetParas(plzL1, plzL2, plzL3, plzL4)
-		for y := 1; y < plzMaxY; y += 2 {
-			offset := y*plzSize + plzYAdd*6
-			plzLine(y, plzVidMem[0][offset:])
-		}
-
-		plzSetParas(plzK1, plzK2, plzK3, plzK4)
-		for y := 1; y < plzMaxY; y += 2 {
-			offset := y*plzSize + plzYAdd*6
-			plzLine(y, plzVidMem[1][offset:])
-		}
-
-		plzSetParas(plzL1, plzL2, plzL3, plzL4)
-		for y := 0; y < plzMaxY; y += 2 {
-			offset := y*plzSize + plzYAdd*6
-			plzLine(y, plzVidMem[1][offset:])
+		if err := plzRenderFields(plzKernel, &plzVidMem,
+			[4]int{plzK1, plzK2, plzK3, plzK4},
+			[4]int{plzL1, plzL2, plzL3, plzL4}); err != nil {
+			log.Printf("plz: %v", err)
+			return
 		}
 
 		if common.CopDrop != 0 {
@@ -1463,10 +1402,6 @@ func plzReset() {
 	plzIK1, plzIK2, plzIK3, plzIK4 = 3500, 2300, 3900, 3670
 	clear(plzFadePal[:])
 	plzDropY = 0
-	clear(plzLC1[:])
-	clear(plzLC2[:])
-	clear(plzLC3[:])
-	clear(plzLC4[:])
 	clear(plzFpal[:])
 	plzPolys = 0
 	clear(plzLightSrc[:])
