@@ -3,6 +3,8 @@ package parts
 import (
 	"log"
 
+	"github.com/olivierh59500/democonstructionkit/effects"
+
 	"go-secondreality/dck/internal/common"
 	"go-secondreality/dck/internal/constants"
 	"go-secondreality/dck/internal/driver"
@@ -27,15 +29,9 @@ var (
 	lensRotPic []byte
 	lensRot90  []byte
 
-	lensW  int
-	lensH  int
-	lensXs int
-	lensYs int
-
-	lens1 []byte
-	lens2 []byte
-	lens3 []byte
-	lens4 []byte
+	lensW      int
+	lensH      int
+	lensMapper *effects.IndexedLens
 
 	lensPalette [constants.PaletteByteCount]byte
 
@@ -65,12 +61,7 @@ func runLens() {
 	lensRot90 = nil
 	lensW = 0
 	lensH = 0
-	lensXs = 0
-	lensYs = 0
-	lens1 = nil
-	lens2 = nil
-	lens3 = nil
-	lens4 = nil
+	lensMapper = nil
 	clear(lensPalette[:])
 	clear(lensFade)
 	clear(lensFade2)
@@ -120,8 +111,6 @@ func runLens() {
 	if len(lensEx0) >= 4 {
 		lensW = int(int16(lensReadU16(lensEx0[0:])))
 		lensH = int(int16(lensReadU16(lensEx0[2:])))
-		lensXs = lensW / 2
-		lensYs = lensH / 2
 		cp := 4
 		for i := 1; i < 4; i++ {
 			if cp+2 >= len(lensEx0) {
@@ -151,10 +140,12 @@ func runLens() {
 		}
 	}
 
-	lens1 = lensEx1
-	lens2 = lensEx2
-	lens3 = lensEx3
-	lens4 = lensEx4
+	var err error
+	lensMapper, err = lensCreateMapper()
+	if err != nil {
+		log.Printf("lens: %v", err)
+		return
+	}
 
 	lensBuildFades()
 	lensBuildRotPic()
@@ -419,199 +410,19 @@ func lensZoomerToVRAM() {
 	}
 }
 
-func lensDrawLens(x0, y0 int) {
-	if lens1 == nil || lens2 == nil || lens3 == nil || lens4 == nil {
-		return
-	}
-
-	u1 := (x0 - lensXs) + (y0-lensYs)*constants.ScreenWidth
-	u2 := (x0 - lensXs) + (y0+lensYs-1)*constants.ScreenWidth
-	ys := lensH / 2
-	ye := lensH - 1
-
-	for y := 0; y < ys; y++ {
-		if u1 >= 0 && u1 <= constants.ScreenSize {
-			lensDoRow(lens1, u1, y, 0x40)
-			lensDoRow2(lens2, u1, y, 0x80)
-			lensDoRow2(lens3, u1, y, 0xC0)
-			lensDoRow3(lens4, u1, y)
-		}
-		u1 += constants.ScreenWidth
-		if u2 >= 0 && u2 <= constants.ScreenSize {
-			row := ye - y
-			lensDoRow(lens1, u2, row, 0x40)
-			lensDoRow2(lens2, u2, row, 0x80)
-			lensDoRow2(lens3, u2, row, 0xC0)
-			lensDoRow3(lens4, u2, row)
-		}
-		u2 -= constants.ScreenWidth
-	}
+// lensCreateMapper keeps the original displacement tables and palette banks,
+// while sharing their validated, allocation-free renderer with other demos.
+func lensCreateMapper() (*effects.IndexedLens, error) {
+	return effects.NewIndexedLens(effects.IndexedLensConfig{
+		Width: lensW, Height: lensH,
+		CanvasWidth: constants.ScreenWidth, CanvasHeight: constants.ScreenHeight,
+		Dense: lensEx1, Sparse: [2][]byte{lensEx2, lensEx3}, Restore: lensEx4,
+		Masks: [3]byte{0x40, 0x80, 0xc0},
+	})
 }
 
-func lensDoRow(lens []byte, U, Y, M int) {
-	if lens == nil {
-		return
-	}
-	mask := uint16(M & 0xFF)
-	mask |= mask << 8
-
-	row := Y << 2
-	if row+4 > len(lens) {
-		return
-	}
-	count := int(int16(lensReadU16(lens[row+2:])))
-	offset := int(lensReadU16(lens[row:]))
-	if count < 4 {
-		return
-	}
-	if offset+2 > len(lens) {
-		return
-	}
-	displacement := int(int16(lensReadU16(lens[offset:])))
-
-	ediBase := U + displacement
-	ebpBase := U + displacement
-	esi := offset + 2
-
-	if (ebpBase & 1) != 0 {
-		if esi+2 > len(lens) {
-			return
-		}
-		idx := int(int16(lensReadU16(lens[esi:])))
-		esi += 2
-		dst := ebpBase
-		src := ediBase + idx
-		if dst >= 0 && dst < len(shim.VRAM) && src >= 0 && src < len(lensBack) {
-			shim.VRAM[dst] = lensBack[src] | byte(M&0xFF)
-		}
-		ebpBase++
-		count--
-	}
-
-	pairs := count >> 1
-	esi -= constants.ScreenWidth
-	ebpBase -= constants.ScreenWidth
-
-	start := 64 - pairs
-	if start < 0 {
-		start = 0
-	}
-
-	for i := start; i < 64 && i < start+pairs; i++ {
-		idx := 63 - i
-		dstOff := constants.ScreenWidth + idx*2
-		srcOff1 := constants.ScreenWidth + idx*4
-		srcOff2 := srcOff1 + 2
-		lensDoWord(lens, ebpBase, dstOff, ediBase, esi, srcOff1, srcOff2, mask)
-	}
-
-	if (count & 1) != 0 {
-		ebpBase += count &^ 1
-		esi += (count &^ 1) << 1
-		off := esi + constants.ScreenWidth
-		if off+2 <= len(lens) {
-			idx := int(int16(lensReadU16(lens[off:])))
-			dst := ebpBase + constants.ScreenWidth
-			src := ediBase + idx
-			if dst >= 0 && dst < len(shim.VRAM) && src >= 0 && src < len(lensBack) {
-				shim.VRAM[dst] = lensBack[src] | byte(M&0xFF)
-			}
-		}
-	}
-}
-
-func lensDoWord(lens []byte, dstBase, dstOff, srcBase, offBase, srcOff1, srcOff2 int, mask uint16) {
-	if lens == nil {
-		return
-	}
-	if lensBack == nil {
-		return
-	}
-	if offBase+srcOff1+2 > len(lens) || offBase+srcOff2+2 > len(lens) {
-		return
-	}
-
-	idx1 := int(int16(lensReadU16(lens[offBase+srcOff1:])))
-	idx2 := int(int16(lensReadU16(lens[offBase+srcOff2:])))
-	src1 := srcBase + idx1
-	src2 := srcBase + idx2
-	dst := dstBase + dstOff
-	if src1 < 0 || src2 < 0 || dst < 0 {
-		return
-	}
-	if src1 >= len(lensBack) || src2 >= len(lensBack) || dst+1 >= len(shim.VRAM) {
-		return
-	}
-	ax := uint16(lensBack[src1]) | (uint16(lensBack[src2]) << 8) | mask
-	shim.VRAM[dst] = byte(ax)
-	shim.VRAM[dst+1] = byte(ax >> 8)
-}
-
-func lensDoRow2(lens []byte, U, Y, M int) {
-	if lens == nil {
-		return
-	}
-	mask := byte(M & 0xFF)
-	row := Y << 2
-	if row+4 > len(lens) {
-		return
-	}
-	count := int(int16(lensReadU16(lens[row+2:])))
-	offset := int(lensReadU16(lens[row:]))
-	if count == 0 {
-		return
-	}
-	if offset+2 > len(lens) {
-		return
-	}
-	base := int(int16(lensReadU16(lens[offset:])))
-	ediBase := U + base
-	ebp := offset + 2
-	for i := 0; i < count; i++ {
-		if ebp+4 > len(lens) {
-			break
-		}
-		dstIdx := int(int16(lensReadU16(lens[ebp:])))
-		srcIdx := int(int16(lensReadU16(lens[ebp+2:])))
-		dst := ediBase + dstIdx
-		src := ediBase + srcIdx
-		if dst >= 0 && dst < len(shim.VRAM) && src >= 0 && src < len(lensBack) {
-			shim.VRAM[dst] = lensBack[src] | mask
-		}
-		ebp += 4
-	}
-}
-
-func lensDoRow3(lens []byte, U, Y int) {
-	if lens == nil {
-		return
-	}
-	row := Y << 2
-	if row+4 > len(lens) {
-		return
-	}
-	count := int(lensReadU16(lens[row+2:]))
-	if count == 0 {
-		return
-	}
-	offs := int(lensReadU16(lens[row:]))
-	if offs+2 > len(lens) {
-		return
-	}
-	base := int(int16(lensReadU16(lens[offs:])))
-	baseIndex := U + base
-	offs += 2
-	for i := 0; i < count; i++ {
-		if offs+2 > len(lens) {
-			break
-		}
-		rel := int(int16(lensReadU16(lens[offs:])))
-		offs += 2
-		idx := baseIndex + rel
-		if idx >= 0 && idx < len(shim.VRAM) && idx < len(lensBack) {
-			shim.VRAM[idx] = lensBack[idx]
-		}
-	}
+func lensDrawLens(x, y int) {
+	lensMapper.Draw(shim.VRAM, lensBack, x, y)
 }
 
 func lensRotate(x, y, xa, ya int) {
