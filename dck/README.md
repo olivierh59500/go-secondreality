@@ -4,4 +4,8 @@ This directory contains the construction-kit version of go-secondreality. The or
 
 Run the original with `go run ./cmd/secondreality` and this version with `go run ./dck/cmd/secondreality` from the repository root.
 
-The choreography and assets stay local; reusable rendering and effects live in `../../lib/democonstructionkit`. Second Reality retains its original ST3 music synchronization.
+The choreography and assets remain in this repository. Reusable rendering and
+effects come from the published `github.com/olivierh59500/democonstructionkit`
+module pinned in `go.mod`. Go resolves its dependencies automatically, including
+`github.com/olivierh59500/ym-player v1.0.0` in the DCK module graph.
+Second Reality retains its original ST3 music synchronization.
