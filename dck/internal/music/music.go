@@ -1,12 +1,11 @@
 package music
 
 import (
-	"encoding/binary"
 	"log"
 	"sync"
 	"time"
 
-	"go-secondreality/dck/internal/st3"
+	"github.com/olivierh59500/democonstructionkit/sound"
 
 	audio "github.com/olivierh59500/democonstructionkit/sound/output"
 )
@@ -25,7 +24,7 @@ var (
 	mu            sync.Mutex
 	ctx           *audio.Context
 	audioPlayer   *audio.Player
-	st3Player     *st3.Player
+	musicStream   *sound.Stream
 	disFrameStart uint32
 	lastFrame     uint32
 	lastFrameTime time.Time
@@ -52,40 +51,24 @@ func ensureContext() {
 	}
 }
 
-func playbackSamplePositionLocked() (uint32, bool) {
-	if audioPlayer == nil {
-		return 0, false
+func trackerPositionLocked() sound.TrackerPosition {
+	if musicStream == nil {
+		return sound.TrackerPosition{}
 	}
-	pos := audioPlayer.Position()
-	if pos <= 0 {
-		return 0, true
+	position := musicStream.Position()
+	if audioPlayer != nil {
+		position = audioPlayer.Position()
 	}
-	samplePos := (uint64(pos) * uint64(sampleRate)) / uint64(time.Second)
-	if samplePos > uint64(^uint32(0)) {
-		samplePos = uint64(^uint32(0))
-	}
-	return uint32(samplePos), true
+	snapshot, _ := musicStream.TrackerPositionAt(position)
+	return snapshot
 }
 
 func orderRowFrameLocked() (uint16, uint16, uint32) {
-	if st3Player == nil {
-		return 0, 0, 0
-	}
-	if samplePos, ok := playbackSamplePositionLocked(); ok {
-		return st3Player.OrderRowFrameAt(samplePos)
-	}
-	return st3Player.OrderRowFrame()
+	snapshot := trackerPositionLocked()
+	return snapshot.Order, snapshot.Row, snapshot.Frame
 }
 
-func plusFlagsLocked() int16 {
-	if st3Player == nil {
-		return 0
-	}
-	if samplePos, ok := playbackSamplePositionLocked(); ok {
-		return st3Player.PlusFlagsAt(samplePos)
-	}
-	return st3Player.PlusFlags()
-}
+func plusFlagsLocked() int16 { return trackerPositionLocked().PlusFlags }
 
 func Start(song Song, startOrder byte) {
 	mu.Lock()
@@ -103,9 +86,9 @@ func Start(song Song, startOrder byte) {
 		}
 		audioPlayer = nil
 	}
-	if st3Player != nil {
-		st3Player.Close()
-		st3Player = nil
+	if musicStream != nil {
+		musicStream.Close()
+		musicStream = nil
 	}
 	lastFrame = 0
 	lastFrameTime = audio.Now()
@@ -113,8 +96,7 @@ func Start(song Song, startOrder byte) {
 	fallbackBase = 0
 	fallbackStart = audio.Now()
 
-	offset := songOffset(song)
-	player, err := st3.New(RealityFC[offset:], st3.Config{SampleRate: sampleRate, Interpolation: true, StartOrder: int(startOrder)})
+	player, err := sound.Open("soundtrack.fc", RealityFC, sound.Options{Track: int(song), SampleRate: sampleRate, PCMFormat: sound.PCM16, Interpolation: true, StartOrder: int(startOrder)})
 	if err != nil {
 		log.Printf("music: failed to start song: %v", err)
 		fallbackSync = true
@@ -123,14 +105,12 @@ func Start(song Song, startOrder byte) {
 		return
 	}
 
-	st3Player = player
-	stream := newStream(player)
-
-	audioPlayer, err = ctx.NewPlayer(stream)
+	musicStream = player
+	audioPlayer, err = ctx.NewPlayer(player)
 	if err != nil {
 		log.Printf("music: failed to create audio player: %v", err)
-		st3Player.Close()
-		st3Player = nil
+		musicStream.Close()
+		musicStream = nil
 		return
 	}
 
@@ -147,9 +127,9 @@ func End() {
 		}
 		audioPlayer = nil
 	}
-	if st3Player != nil {
-		st3Player.Close()
-		st3Player = nil
+	if musicStream != nil {
+		musicStream.Close()
+		musicStream = nil
 	}
 	fallbackSync = false
 }
@@ -158,7 +138,7 @@ func Sync() int {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil || fallbackSync {
+	if musicStream == nil || fallbackSync {
 		return syncFallbackLocked()
 	}
 
@@ -183,7 +163,7 @@ func GetPlusFlags() int {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil || fallbackSync {
+	if musicStream == nil || fallbackSync {
 		return 0
 	}
 
@@ -194,7 +174,7 @@ func GetRow() int {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil || fallbackSync {
+	if musicStream == nil || fallbackSync {
 		return 0
 	}
 
@@ -206,7 +186,7 @@ func GetOrder() int {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil || fallbackSync {
+	if musicStream == nil || fallbackSync {
 		return 0
 	}
 
@@ -218,7 +198,7 @@ func GetOrderRow() (int, int) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil || fallbackSync {
+	if musicStream == nil || fallbackSync {
 		return 0, 0
 	}
 
@@ -230,7 +210,7 @@ func SetFrame(frame int) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil {
+	if musicStream == nil {
 		disFrameStart = 0
 		return
 	}
@@ -250,7 +230,7 @@ func GetFrame() int {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if st3Player == nil || fallbackSync {
+	if musicStream == nil || fallbackSync {
 		return 0
 	}
 
@@ -259,14 +239,6 @@ func GetFrame() int {
 		return 0
 	}
 	return int(frame - disFrameStart)
-}
-
-func songOffset(song Song) int {
-	idx := int(song) * 4
-	if idx+4 > len(RealityFC) {
-		return 0
-	}
-	return int(binary.LittleEndian.Uint32(RealityFC[idx : idx+4]))
 }
 
 func lastSyncLocked(orderAndRow uint16) int {
