@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/olivierh59500/democonstructionkit/effects"
+	"github.com/olivierh59500/democonstructionkit/indexed"
 
 	"go-secondreality/dck/internal/common"
 	"go-secondreality/dck/internal/constants"
@@ -29,9 +30,10 @@ var (
 	lensRotPic []byte
 	lensRot90  []byte
 
-	lensW      int
-	lensH      int
-	lensMapper *effects.IndexedLens
+	lensW        int
+	lensH        int
+	lensMapper   *effects.IndexedLens
+	lensRotozoom *indexed.Rotozoom256
 
 	lensPalette [constants.PaletteByteCount]byte
 
@@ -62,6 +64,7 @@ func runLens() {
 	lensW = 0
 	lensH = 0
 	lensMapper = nil
+	lensRotozoom = nil
 	clear(lensPalette[:])
 	clear(lensFade)
 	clear(lensFade2)
@@ -142,6 +145,11 @@ func runLens() {
 
 	var err error
 	lensMapper, err = lensCreateMapper()
+	if err != nil {
+		log.Printf("lens: %v", err)
+		return
+	}
+	lensRotozoom, err = indexed.NewRotozoom256(indexed.Rotozoom256Config{Width: lensZoomXW, Height: lensZoomYW})
 	if err != nil {
 		log.Printf("lens: %v", err)
 		return
@@ -425,127 +433,15 @@ func lensDrawLens(x, y int) {
 	lensMapper.Draw(shim.VRAM, lensBack, x, y)
 }
 
+// lensRotate applies the indexed fixed-point rotozoom while preserving the
+// source's palette banks and 16-bit wrap behavior.
 func lensRotate(x, y, xa, ya int) {
-	xpos := int32(x) << 16
-	ypos := int32(y) << 16
-	Xadd := int32(int16(ya)) << 6
-	Yadd := int32(int16(xa)) << 6
-
-	src := lensRotPic
-	if abs32(Xadd) > abs32(Yadd) {
-		src = lensRot90
-		t := Xadd
-		Xadd = -Yadd
-		Yadd = t
-		tx := xpos
-		ty := ypos
-		xpos = -ty
-		ypos = tx
-	}
-	if src == nil || len(src) < 256*256 {
+	if lensRotozoom == nil {
 		return
 	}
-
-	var modaLo [lensZoomXW / 4]uint16
-	var modaHi [lensZoomXW / 4]uint16
-	var modbLo [lensZoomXW / 4]uint16
-	var modbHi [lensZoomXW / 4]uint16
-
-	{
-		var si uint16
-		var di uint16
-		var al uint8
-		var ah uint8
-
-		cx := uint16(uint32(Yadd) & 0xFFFF)
-		dx := uint16(uint32(Xadd) & 0xFFFF)
-		bl := uint8(uint32(Yadd) >> 16)
-		bh := uint8(uint32(Xadd) >> 16)
-
-		bh = uint8(-int8(bh))
-		olddx := dx
-		dx = uint16(0 - dx)
-		if olddx != 0 {
-			bh--
-		}
-
-		for i := 0; i < lensZoomXW/4; i++ {
-			t := uint32(si) + uint32(cx)
-			si = uint16(t)
-			c := uint8(t >> 16)
-			al = uint8(uint16(al) + uint16(bl) + uint16(c))
-
-			t = uint32(di) + uint32(dx)
-			di = uint16(t)
-			c = uint8(t >> 16)
-			ah = uint8(uint16(ah) + uint16(bh) + uint16(c))
-			modaLo[i] = uint16(al) | (uint16(ah) << 8)
-
-			t = uint32(si) + uint32(cx)
-			si = uint16(t)
-			c = uint8(t >> 16)
-			al = uint8(uint16(al) + uint16(bl) + uint16(c))
-
-			t = uint32(di) + uint32(dx)
-			di = uint16(t)
-			c = uint8(t >> 16)
-			ah = uint8(uint16(ah) + uint16(bh) + uint16(c))
-			modbLo[i] = uint16(al) | (uint16(ah) << 8)
-
-			t = uint32(si) + uint32(cx)
-			si = uint16(t)
-			c = uint8(t >> 16)
-			al = uint8(uint16(al) + uint16(bl) + uint16(c))
-
-			t = uint32(di) + uint32(dx)
-			di = uint16(t)
-			c = uint8(t >> 16)
-			ah = uint8(uint16(ah) + uint16(bh) + uint16(c))
-			modaHi[i] = uint16(al) | (uint16(ah) << 8)
-
-			t = uint32(si) + uint32(cx)
-			si = uint16(t)
-			c = uint8(t >> 16)
-			al = uint8(uint16(al) + uint16(bl) + uint16(c))
-
-			t = uint32(di) + uint32(dx)
-			di = uint16(t)
-			c = uint8(t >> 16)
-			ah = uint8(uint16(ah) + uint16(bh) + uint16(c))
-			modbHi[i] = uint16(al) | (uint16(ah) << 8)
-		}
+	if err := lensRotozoom.Render(lensZoomerPlanar[:], lensRotPic, lensRot90, x, y, xa, ya); err != nil {
+		log.Printf("lens rotozoom: %v", err)
 	}
-
-	Xadd = lensScale307(Xadd)
-	Yadd = lensScale307(Yadd)
-
-	dst := lensZoomerPlanar[:]
-	for row := 0; row < lensZoomYW; row++ {
-		ypos += Yadd
-		xpos += Xadd
-		base := uint16(((uint32(ypos) >> 8) & 0xFF00) | ((uint32(xpos) >> 16) & 0x00FF))
-		for i := 0; i < lensZoomXW/4; i++ {
-			offA0 := modaLo[i]
-			offA1 := modaHi[i]
-			offB0 := modbLo[i]
-			offB1 := modbHi[i]
-
-			loA := src[int(uint16(base+offA0))]
-			hiA := src[int(uint16(base+offA1))]
-			dst[0] = loA
-			dst[1] = hiA
-			loB := src[int(uint16(base+offB0))]
-			hiB := src[int(uint16(base+offB1))]
-			dst[2] = loB
-			dst[3] = hiB
-			dst = dst[4:]
-		}
-	}
-}
-
-func lensScale307(v int32) int32 {
-	lo := uint32(v) * 307
-	return int32(lo >> 8)
 }
 
 func lensParseI16(data []byte) []int16 {
@@ -562,11 +458,4 @@ func lensReadU16(b []byte) uint16 {
 		return 0
 	}
 	return uint16(b[0]) | uint16(b[1])<<8
-}
-
-func abs32(v int32) int32 {
-	if v < 0 {
-		return -v
-	}
-	return v
 }
