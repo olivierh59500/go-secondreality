@@ -1,3 +1,31 @@
+# Second Reality Go
+
+<!-- Project showcase -->
+## Screenshots
+
+[![Transparent faceted solids above a shaded checkerboard](docs/media/screenshot-1.png)](docs/media/screenshot-1.png)
+
+Transparent faceted solids above a shaded checkerboard.
+
+[![A rotating cube covered in animated color plasma](docs/media/screenshot-2.png)](docs/media/screenshot-2.png)
+
+A rotating cube covered in animated color plasma.
+
+[![Reflective spheres and fire streaks over rippling water](docs/media/screenshot-3.png)](docs/media/screenshot-3.png)
+
+Reflective spheres and fire streaks over rippling water.
+
+## Video
+
+[![Animated preview of Second Reality Go](docs/media/preview.gif)](https://github.com/olivierh59500/go-secondreality/raw/refs/heads/main/docs/media/preview.mp4)
+
+**[Watch or download the 24-second MP4 preview with sound](https://github.com/olivierh59500/go-secondreality/raw/refs/heads/main/docs/media/preview.mp4)**
+
+This short showcase combines selected passages from the Go production.
+
+The animated image is silent; the MP4 includes the soundtrack.
+
+<!-- End project showcase -->
 
 ## Optional DCK version
 
